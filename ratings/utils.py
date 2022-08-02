@@ -52,7 +52,7 @@ def sim_euclidean_distance(ratings_queryset, factor_a, factor_b):
     else:
         q, p = query_as_sql(rating_query)
         rating_qs_sql = q % p
-        queryset_filter = " AND r1.id IN (%s)" % rating_qs_sql
+        queryset_filter = f" AND r1.id IN ({rating_qs_sql})"
 
     params = {
         "ratings_table": rating_model._meta.db_table,
@@ -115,7 +115,7 @@ def sim_pearson_correlation(ratings_queryset, factor_a, factor_b):
     else:
         q, p = query_as_sql(rating_query)
         rating_qs_sql = q % p
-        queryset_filter = " AND r1.id IN (%s)" % rating_qs_sql
+        queryset_filter = f" AND r1.id IN ({rating_qs_sql})"
 
     params = {
         "ratings_table": rating_model._meta.db_table,
@@ -142,10 +142,7 @@ def sim_pearson_correlation(ratings_queryset, factor_a, factor_b):
     num = psum - (sum1 * sum2 / sample_size)
     den = sqrt((sum1_sq - pow(sum1, 2) / sample_size) * (sum2_sq - pow(sum2, 2) / sample_size))
 
-    if den == 0:
-        return 0
-
-    return num / den
+    return 0 if den == 0 else num / den
 
 
 def top_matches(ratings_queryset, items, item, n=5, similarity=sim_pearson_correlation):

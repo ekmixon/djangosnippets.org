@@ -30,7 +30,10 @@ def skipUnlessDB(engine):
 
     actual_engine = settings.DATABASES["default"]["ENGINE"]
     if engine not in actual_engine:
-        return unittest.skip("Unsupported connection engine: %s (expected %s)" % (actual_engine, engine))
+        return unittest.skip(
+            f"Unsupported connection engine: {actual_engine} (expected {engine})"
+        )
+
     return lambda func: func
 
 

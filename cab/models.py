@@ -138,11 +138,7 @@ class SnippetFlag(models.Model):
     flag = models.IntegerField(choices=FLAG_CHOICES)
 
     def __str__(self):
-        return "%s flagged as %s by %s" % (
-            self.snippet.title,
-            self.get_flag_display(),
-            self.user.username,
-        )
+        return f"{self.snippet.title} flagged as {self.get_flag_display()} by {self.user.username}"
 
     def remove_and_ban(self):
         user = self.snippet.author
@@ -161,7 +157,7 @@ class Bookmark(models.Model):
         ordering = ("-date",)
 
     def __str__(self):
-        return "%s bookmarked by %s" % (self.snippet, self.user)
+        return f"{self.snippet} bookmarked by {self.user}"
 
     def save(self, *args, **kwargs):
         super(Bookmark, self).save(*args, **kwargs)

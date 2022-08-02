@@ -19,13 +19,16 @@ def latest(model_or_obj, num=5):
     else:
         manager = model_or_obj._default_manager
 
-    # get a field to order by, defaulting to the primary key
-    field_name = model_or_obj._meta.pk.name
-    for field in model_or_obj._meta.fields:
-        if isinstance(field, (DateTimeField, DateField)):
-            field_name = field.name
-            break
-    return manager.all().order_by("-%s" % field_name)[:num]
+    field_name = next(
+        (
+            field.name
+            for field in model_or_obj._meta.fields
+            if isinstance(field, (DateTimeField, DateField))
+        ),
+        model_or_obj._meta.pk.name,
+    )
+
+    return manager.all().order_by(f"-{field_name}")[:num]
 
 
 @register.filter
@@ -49,6 +52,4 @@ def strip(value):
     """
     Strips a string.
     """
-    if value:
-        return value.strip()
-    return value
+    return value.strip() if value else value

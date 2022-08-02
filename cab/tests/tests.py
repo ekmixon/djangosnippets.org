@@ -78,7 +78,10 @@ class BaseCabTestCase(TestCase):
         self.client.logout()
 
         resp = self.client.get(url)
-        self.assertRedirects(resp, "/accounts/login/?next=%s" % url, fetch_redirect_response=False)
+        self.assertRedirects(
+            resp, f"/accounts/login/?next={url}", fetch_redirect_response=False
+        )
+
 
         self.client.login(username=username, password=password)
 
@@ -384,19 +387,19 @@ class SnippetViewsTestCase(BaseCabTestCase):
         snippet_rate = reverse("cab_snippet_rate", args=[self.snippet1.pk])
         self.assertEqual(snippet_rate, "/snippets/%d/rate/" % self.snippet1.pk)
 
-        resp = self.client.get(snippet_rate + "?score=up")
+        resp = self.client.get(f"{snippet_rate}?score=up")
         self.assertEqual(resp.status_code, 302)
         self.assertTrue("accounts/login" in resp["location"])
 
         self.client.login(username="a", password="a")
-        resp = self.client.get(snippet_rate + "?score=NaN")
+        resp = self.client.get(f"{snippet_rate}?score=NaN")
         self.assertEqual(self.snippet1.ratings.count(), 0)
 
-        resp = self.client.get(snippet_rate + "?score=up")
+        resp = self.client.get(f"{snippet_rate}?score=up")
         self.assertEqual(self.snippet1.ratings.count(), 1)
         self.assertEqual(self.snippet1.ratings.cumulative_score(), 1)
 
-        resp = self.client.get(snippet_rate + "?score=down")
+        resp = self.client.get(f"{snippet_rate}?score=down")
         self.assertEqual(self.snippet1.ratings.count(), 1)
         self.assertEqual(self.snippet1.ratings.cumulative_score(), -1)
 
@@ -412,12 +415,12 @@ class SnippetViewsTestCase(BaseCabTestCase):
 
         self.client.login(username="a", password="a")
 
-        self.client.get(snippet_rate + "?score=up")
+        self.client.get(f"{snippet_rate}?score=up")
         self.assertEqual(self.snippet1.ratings.count(), 1)
         self.snippet1.update_rating()
         self.assertEqual(self.snippet1.rating_score, 1)
 
-        self.client.get(snippet_rate + "?score=reset")
+        self.client.get(f"{snippet_rate}?score=reset")
         self.assertEqual(self.snippet1.ratings.count(), 0)
         self.snippet1.update_rating()
         self.assertEqual(self.snippet1.rating_score, 0)
@@ -537,7 +540,7 @@ class TemplatetagTestCase(BaseCabTestCase):
     def test_core_tags(self):
         t = Template("""{% load core_tags %}{% for s in "cab.snippet"|latest:2 %}{{ s.title }}|{% endfor %}""")
         rendered = t.render(Context({}))
-        self.assertEqual(rendered, "%s|%s|" % (self.snippet3.title, self.snippet2.title))
+        self.assertEqual(rendered, f"{self.snippet3.title}|{self.snippet2.title}|")
 
         t = Template(
             '{% load core_tags %}{% for t in "cab.snippet"|call_manager:"top_tags"|slice:":2" %}'
@@ -563,9 +566,9 @@ class SearchViewsTestCase(BaseCabTestCase):
 
     def test_q_search(self):
         search_index = reverse("cab_search")
-        resp = self.client.get(search_index + "?q=greeting")
+        resp = self.client.get(f"{search_index}?q=greeting")
         self.assertCountEqual(resp.context["object_list"], [self.snippet1])
-        resp = self.client.get(search_index + "?q=doesnotexistforsure")
+        resp = self.client.get(f"{search_index}?q=doesnotexistforsure")
         self.assertCountEqual(resp.context["object_list"], [])
 
 

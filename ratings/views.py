@@ -26,7 +26,7 @@ def rate_object(request, ct, pk, score=1, add=True):
     model_class = ctype.model_class()
 
     if not hasattr(model_class, "_ratings_field"):
-        raise Http404("Model class %s does not support ratings" % model_class)
+        raise Http404(f"Model class {model_class} does not support ratings")
 
     obj = get_object_or_404(model_class, pk=pk)
 

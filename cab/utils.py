@@ -85,12 +85,10 @@ def object_list(
             previous_page = None
 
         c = {
-            "%s_list" % template_object_name: page_obj.object_list,
+            f"{template_object_name}_list": page_obj.object_list,
             "paginator": paginator,
             "page_obj": page_obj,
             "is_paginated": page_obj.has_other_pages(),
-            # Legacy template context stuff. New templates should use page_obj
-            # to access this instead.
             "results_per_page": paginator.per_page,
             "has_next": page_obj.has_next(),
             "has_previous": page_obj.has_previous(),
@@ -103,24 +101,24 @@ def object_list(
             "hits": paginator.count,
             "page_range": paginator.page_range,
         }
+
     else:
         c = {
-            "%s_list" % template_object_name: queryset,
+            f"{template_object_name}_list": queryset,
             "paginator": None,
             "page_obj": None,
             "is_paginated": False,
         }
+
         if not allow_empty and len(queryset) == 0:
             raise Http404
 
     for key, value in extra_context.items():
-        if callable(value):
-            c[key] = value()
-        else:
-            c[key] = value
+        c[key] = value() if callable(value) else value
     if not template_name:
         model = queryset.model
-        template_name = "%s/%s_list.html" % (model._meta.app_label, model._meta.object_name.lower())
+        template_name = f"{model._meta.app_label}/{model._meta.object_name.lower()}_list.html"
+
     t = template_loader.get_template(template_name)
     return HttpResponse(t.render(c, request=request), content_type=content_type)
 
@@ -152,17 +150,14 @@ def object_detail(
     model = queryset.model
     if not object_id or (slug and slug_field):
         raise AttributeError("Generic detail view must be called with either " "an object_id or a slug/slug_field.")
-    if object_id:
-        queryset = queryset.filter(pk=object_id)
-    elif slug and slug_field:
-        queryset = queryset.filter(**{slug_field: slug})
-
+    queryset = queryset.filter(pk=object_id)
     try:
         obj = queryset.get()
     except ObjectDoesNotExist:
-        raise Http404("No %s found matching the query" % model._meta.verbose_name)
+        raise Http404(f"No {model._meta.verbose_name} found matching the query")
     if not template_name:
-        template_name = "%s/%s_detail.html" % (model._meta.app_label, model._meta.object_name.lower())
+        template_name = f"{model._meta.app_label}/{model._meta.object_name.lower()}_detail.html"
+
     if template_name_field:
         template_name_list = [getattr(obj, template_name_field), template_name]
         t = template_loader.select_template(template_name_list)
@@ -172,12 +167,8 @@ def object_detail(
         template_object_name: obj,
     }
     for key, value in extra_context.items():
-        if callable(value):
-            c[key] = value()
-        else:
-            c[key] = value
-    response = HttpResponse(t.render(c, request=request), content_type=content_type)
-    return response
+        c[key] = value() if callable(value) else value
+    return HttpResponse(t.render(c, request=request), content_type=content_type)
 
 
 def get_past_datetime(months_ago):

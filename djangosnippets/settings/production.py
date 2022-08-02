@@ -15,10 +15,7 @@ def env_to_bool(input):
     Must change String from environment variable into Boolean
     defaults to True
     """
-    if isinstance(input, str):
-        return input not in ("False", "false")
-    else:
-        return input
+    return input not in ("False", "false") if isinstance(input, str) else input
 
 
 DEBUG = env_to_bool(os.environ.get("DEBUG", False))
@@ -75,11 +72,16 @@ redis_url = parse.urlparse(os.environ["REDISTOGO_URL"])
 CACHES = {
     "default": {
         "BACKEND": "redis_cache.RedisCache",
-        "LOCATION": "%s:%s" % (redis_url.hostname, redis_url.port),
-        "OPTIONS": {"DB": 0, "PASSWORD": redis_url.password, "PARSER_CLASS": "redis.connection.HiredisParser"},
+        "LOCATION": f"{redis_url.hostname}:{redis_url.port}",
+        "OPTIONS": {
+            "DB": 0,
+            "PASSWORD": redis_url.password,
+            "PARSER_CLASS": "redis.connection.HiredisParser",
+        },
         "VERSION": os.environ.get("CACHE_VERSION", 0),
-    },
+    }
 }
+
 
 # Use Sentry for debugging if available.
 if "SENTRY_DSN" in os.environ:

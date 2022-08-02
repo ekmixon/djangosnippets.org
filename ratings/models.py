@@ -19,7 +19,7 @@ class RatedItemBase(models.Model):
         abstract = True
 
     def __str__(self):
-        return "%s rated %s by %s" % (self.content_object, self.score, self.user)
+        return f"{self.content_object} rated {self.score} by {self.user}"
 
     def save(self, *args, **kwargs):
         self.hashed = self.generate_hash()
@@ -28,7 +28,7 @@ class RatedItemBase(models.Model):
     def generate_hash(self):
         content_field = self._meta.get_field("content_object")
         related_object = getattr(self, content_field.name)
-        uniq = "%s.%s" % (related_object._meta, related_object.pk)
+        uniq = f"{related_object._meta}.{related_object.pk}"
         return hashlib.sha1(uniq.encode("ascii")).hexdigest()
 
     @classmethod
@@ -85,18 +85,18 @@ class RatingsQuerySet(QuerySet):
         if queryset is None:
             queryset = self.rated_model._default_manager.all()
 
-        ordering = descending and "-%s" % alias or alias
+        ordering = descending and f"-{alias}" or alias
 
-        if not is_gfk(related_field):
-            query_name = related_field.related_query_name()
-
-            if len(self.query.where.children):
-                queryset = queryset.filter(**{"%s__pk__in" % query_name: self.values_list("pk")})
-
-            return queryset.annotate(**{alias: aggregator("%s__score" % query_name)}).order_by(ordering)
-
-        else:
+        if is_gfk(related_field):
             return generic_annotate(queryset, self, aggregator("score"), related_field, alias=alias).order_by(ordering)
+        query_name = related_field.related_query_name()
+
+        if len(self.query.where.children):
+            queryset = queryset.filter(**{f"{query_name}__pk__in": self.values_list("pk")})
+
+        return queryset.annotate(
+            **{alias: aggregator(f"{query_name}__score")}
+        ).order_by(ordering)
 
 
 class _RatingsDescriptor(models.Manager):
@@ -138,6 +138,8 @@ class _RatingsDescriptor(models.Manager):
         rel_model = self.rating_model
         rated_model = self.rated_model
 
+
+
         class RelatedManager(superclass):
             def get_queryset(self):
                 qs = RatingsQuerySet(rel_model, rated_model=rated_model)
@@ -155,13 +157,13 @@ class _RatingsDescriptor(models.Manager):
             add.alters_data = True
 
             def create(self, **kwargs):
-                kwargs.update(rel_model.lookup_kwargs(instance))
+                kwargs |= rel_model.lookup_kwargs(instance)
                 return super(RelatedManager, self).create(**kwargs)
 
             create.alters_data = True
 
             def get_or_create(self, **kwargs):
-                kwargs.update(rel_model.lookup_kwargs(instance))
+                kwargs |= rel_model.lookup_kwargs(instance)
                 return super(RelatedManager, self).get_or_create(**kwargs)
 
             get_or_create.alters_data = True
@@ -214,6 +216,7 @@ class _RatingsDescriptor(models.Manager):
             def similar_items(self):
                 return SimilarItem.objects.get_for_item(instance)
 
+
         manager = RelatedManager()
         manager.core_filters = rel_model.lookup_kwargs(instance)
         manager.model = rel_model
@@ -264,4 +267,4 @@ class SimilarItem(models.Model):
     objects = SimilarItemManager()
 
     def __str__(self):
-        return "%s (%s)" % (self.similar_object, self.score)
+        return f"{self.similar_object} ({self.score})"
